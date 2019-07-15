@@ -21,7 +21,7 @@ def getCoordinates(coordinates):
     URL = concatenate_list_data(URLarr)
     return URL
 
-def getURL(coordinates, maptype, polyline, key):
+def getURL(coordinates, maptype, polyline, key, base64_signature):
     zoom = "19"
     size1 = "600"
     size2 = "300"
@@ -35,6 +35,7 @@ def getURL(coordinates, maptype, polyline, key):
             "&style=feature:all|element:labels|visibility:off",
             "&sensor=false",
             "&key=" + key,
+            "&signature=" + base64_signature,
             polyline]
     URL = concatenate_list_data(URLarr)
     return URL
@@ -65,7 +66,7 @@ def transformCoordinates(polyline):
     return polyString
 
 
-def getImagery(coord, mtype, iter, userPath, ident, poly, key):
+def getImagery(coord, mtype, iter, userPath, ident, poly, key, signature):
     if (mtype == 'satellite'):
         tb = 'sat'
     else:
@@ -77,7 +78,7 @@ def getImagery(coord, mtype, iter, userPath, ident, poly, key):
                 mtype = 'satellite'
             else:
                 tb = 'otr'
-    url = getURL(coordinates = coord, maptype = mtype, polyline = poly, key=key)
+    url = getURL(coordinates = coord, maptype = mtype, polyline = poly, key=key, base64_signature=signature)
     os.chdir(userPath)
     r = requests.get(url, allow_redirects=True)
     filename = tb + str(iter) + ".png"
@@ -206,9 +207,10 @@ def calculate_reject_index(img):
 
 ###############################################################################################
 #################################         INTERFACE       #####################################
-coord_path = "C:/Users/hecto/Documents/TFM/20190521_Church_Data_Ox_Diocese.xlsx"
-download_folder_path = 'C:/Users/hecto/Documents/TFM/church_imagery/'
-API_key = "AIzaSyB6FNtolgeP71ZmsrKGAGzfxkam2Ei1Uhc"
+coord_path = '[Your path to the .xlsx document with the church coordinates goes here]'
+download_folder_path = '[Your path to the download imagery folder goes here]'
+API_key = '[Your API key goes here]'
+signature= '[Your digital signature goes here]'
 ###############################################################################################
 
 #reading the excel file
@@ -216,7 +218,7 @@ df = pd.read_excel(coord_path)
 #building the URL and downloading the file
 no_poly = []
 yes_poly = []
-for i in range (df.shape[0]):   #max is: df.shape[0]
+for i in range (df.shape[0]):
     latlong = pd.Series([str(df.at[i,'Latitude']),str(df.at[i,'Longitude'])]).str.cat(sep=',')
     polyline = getPolyline(userPath = download_folder_path, coord=latlong, iter=i, ident=str(df.at[i,'Balkerne_Reference']))
     if (len(polyline.shape) != 3):
@@ -282,7 +284,6 @@ for fSample in failed_samples:
     imrdm = cv2.imread(rdm_path)
     imsat = cv2.imread(sat_path)
     rdm_contour, contour_flag = extract_rdm_contour(img = imrdm)
-
     imobs=obscure_background(img = imsat, shape = rdm_contour, color = [255, 255, 255])
 
     filename = "fil" + str(fSample) + ".png"
